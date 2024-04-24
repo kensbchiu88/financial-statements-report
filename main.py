@@ -1,9 +1,10 @@
 from datetime import datetime
 import json
+import os
 import sys
 import openpyxl
 from constant import CategoryEnum
-from util import get_previous_quarter, upload_to_minio, call_send_email_api
+from util import get_previous_two_quarter, upload_to_minio, call_send_email_api
 #import excel2img
 import excel
 import news_excel
@@ -190,7 +191,7 @@ def main(fiscal_year, quarter):
     # TEL sheet
     sheet_tel = wb.create_sheet("TEL")
     #excel.create_argosy_style_financial_statements(sheet_tel, "tel", fiscal_year, quarter, tel_report_text, CategoryEnum.FOREIGN)
-    temporary_file = excel.create_lotes_style_financial_statements(sheet_tel, "tel", fiscal_year, quarter, tel_report_text, CategoryEnum.FOREIGN)
+    temporary_file = excel.create_lotes_style_financial_statements(sheet_tel, "1385157", fiscal_year, quarter, tel_report_text, CategoryEnum.FOREIGN)
     for f in temporary_file:
       object_name = upload_to_minio(f)
       image_info = {"company": "TEL", "file-name": object_name}
@@ -198,7 +199,7 @@ def main(fiscal_year, quarter):
     
     # APH
     sheet_aph = wb.create_sheet("APH")
-    temporary_file = excel.create_lotes_style_financial_statements(sheet_aph, "aph", fiscal_year, quarter, aph_report_text, CategoryEnum.FOREIGN)    
+    temporary_file = excel.create_lotes_style_financial_statements(sheet_aph, "820313", fiscal_year, quarter, aph_report_text, CategoryEnum.FOREIGN)    
     for f in temporary_file:
       object_name = upload_to_minio(f)
       image_info = {"company": "APH", "file-name": object_name}
@@ -271,7 +272,9 @@ if __name__ == "__main__":
   else :
     fiscal_year = int(fiscal_year)
     quarter = int(quarter)
-
-  (target_year, target_quarter) = get_previous_quarter(fiscal_year, quarter)
+  
+  print(f"開始產生報表 {datetime.today()}")
+  print(f"現在年度: {fiscal_year}  現在季度: {quarter}")
+  (target_year, target_quarter) = get_previous_two_quarter(fiscal_year, quarter)
   print(f"財報年度: {target_year}  財報季度: {target_quarter}") 
   main(target_year, target_quarter)  

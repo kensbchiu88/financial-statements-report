@@ -1,4 +1,3 @@
-from datetime import datetime
 import math
 
 import matplotlib.pyplot as plt
@@ -14,119 +13,9 @@ from constant import CategoryEnum
 import data_service
 import platform
 from PIL import Image as PILImage
+from util import get_previous_quarter
+import setting 
 
-lotes_report_format = {
-    "title": "B2:R2",
-    "summary":"B3:R3",
-    "profit_summary": "B4:E4",
-    "profit_summary_chart": "F4:R4",
-    "by_segment_summary": "B5:E5",
-    "by_segment_chart": "F5:R5",
-    "financial_statements": "B6:R40",
-}
-
-argosy_report_format = {
-    "title": "B2:T2",
-    "summary":"B3:T35"
-}
-
-# 國內財報明細項目，資料庫名稱對應顯示文字
-financial_statement_tw_items = {
-    "operating_revenue": "營業收入A",
-    "operating_costs": "營業成本B",
-    "gross_profit": "營業毛利 C=A-B",
-    "gross_profit_margin": "毛利率 D=C/A",
-    "operating_expenses": "營業費用 E",
-    "operating_income": "營業利益 F=C-E",
-    "depreciation": "折舊",
-    "amortization": "攤提",
-    "ebitda": "EBITDA",
-    "total_nonoperating_income": "總營業外收入 G=H+I+J",
-    "interest_income": "利息收入 H",
-    "net_investment_income": "投資利益淨額 I",
-    "other_nonoperating_income": "'其他營業外收入 J",
-    "total_nonoperating_expenses": "總營業外費用 K=L+M+N",
-    "interest_expenses": "利息費用 L",
-    "investment_losses": "投資損失 M",
-    "other_nonoperating_expenses": "其他營業外費用 N",
-    "pretax_income": "稅前純益 O=F+G-K",
-    "pretax_net_profit_margin": "稅前凈利率 P=O/A",
-    "income_tax_expense": "所得稅費用[利益] Q",
-    "minority_interest_income": "少數股東損益 R",
-    "net_income": "稅後淨利 S=O-Q-R",
-    "net_profit_margin": "稅後淨利率 T=S/A"
-}
-
-# 國內財報明細項目，百分比數值的項目
-financial_statement_tw_items_percentage_format = {
-    "gross_profit_margin": 1,
-    "pretax_net_profit_margin": 1,
-    "net_profit_margin": 1
-}
-
-# 國內財報明細項目，改變底色的項目
-financial_statement_tw_items_color_format = {
-    "title": "E2EFDA",
-    "operating_revenue": "E2EFDA",
-    "gross_profit": "E2EFDA",
-    "gross_profit_margin": "E2EFDA",
-    "operating_income": "E2EFDA",
-    "total_nonoperating_income": "E2EFDA",
-    "total_nonoperating_expenses": "E2EFDA",
-    "pretax_income": "E2EFDA",
-    "pretax_net_profit_margin": "E2EFDA",
-    "net_income": "E2EFDA",
-    "net_profit_margin": "E2EFDA"
-}
-
-# 國外財報明細項目，資料庫名稱對應顯示文字
-financial_statement_foreign_items = {
-    "net_sales": "營業收入A",
-    "qoq_growth": "成長Q/Q",
-    "yoy_growth": "成長Y/Y",
-    "cost_of_sales": "銷售成本 B",
-    "gross_profit": "毛利潤 C=A-B",
-    "gross_profit_margin": "毛利率 D=C/A",
-    "selling_general_administrative_expenses": "管銷研 E",
-    "selling_general_administrative_expenses_percentage": """管銷研% F=E/A""",
-    "operating_income": "稅前利潤額 G=C-E",
-    "pretax_profit_margin": "稅前利潤率 H=G/A",
-    "dividend_payment": "股息金額 I",
-    "other_income_and_expenses": "營業外收支 J",
-    "total_interest_and_other_expenses": "TOTAL利息及其他費用K=I+J",
-    "pretax_income": "稅前收入 L=G-K",
-    "pretax_net_profit_margin": "稅前利潤率 M=L/A",
-    "income_tax_expense": "稅捐 N",
-    "effective_tax_rate": "稅率 O",
-    "shareholders_equity": "股東權益 P",
-    "net_income": "淨收入 Q=L-N-P",
-    "net_profit_margin": "淨利率R=Q/A"   
-}
-
-# 國外財報明細項目，百分比數值的項目
-financial_statement_foreign_items_percentage_format = {
-    "qoq_growth": 1,
-    "yoy_growth": 1,
-    "gross_profit_margin": 1,
-    "pretax_profit_margin": 1,
-    "pretax_profit_margin": 1,
-    "effective_tax_rate": 1,
-    "net_profit_margin": 1
-}
-
-# 國外財報明細項目，改變底色的項目
-financial_statement_foreign_items_color_format = {
-    "title": "E2EFDA",
-    "net_sales": "E2EFDA",
-    "gross_profit": "E2EFDA",
-    "gross_profit_margin": "E2EFDA",
-    "operating_income": "E2EFDA",
-    "pretax_profit_margin": "E2EFDA",
-    "pretax_income": "E2EFDA",
-    "pretax_net_profit_margin": "E2EFDA",
-    "net_income": "E2EFDA",
-    "net_profit_margin": "E2EFDA"
-}
 
 # 中文字型檔，圖表的Legend需要
 os_name = platform.system()
@@ -150,24 +39,7 @@ border_style_rb = Border(right=Side(style='thin'),bottom=Side(style='thin'),)
 border_style_t = Border(top=Side(style='thin'),)
 border_style_b = Border(bottom=Side(style='thin'),)
 border_style_all = Border(top=Side(style='thin'),bottom=Side(style='thin'),left=Side(style='thin'),right=Side(style='thin'),)
-
-def __get_financial_statement_items_dict(category: CategoryEnum):
-    if category == CategoryEnum.TW:
-        return financial_statement_tw_items
-    else:
-        return financial_statement_foreign_items
-    
-def __get_financial_statement_items_percentage_format_dict(category: CategoryEnum):
-    if category == CategoryEnum.TW:
-        return financial_statement_tw_items_percentage_format
-    else:
-        return financial_statement_foreign_items_percentage_format
-
-def __get_financial_statement_items_color_format_dict(category: CategoryEnum):
-    if category == CategoryEnum.TW:
-        return financial_statement_tw_items_color_format
-    else:
-        return financial_statement_foreign_items_color_format        
+   
 
 def __is_multiple_row(sheet, cell_range):
     rows = sheet[cell_range]
@@ -257,45 +129,29 @@ def __get_first_cell(sheet, cell_range):
         for cell in row:
             return cell
 
-def __is_numeric(data):
-    numeric_types = (int, float, complex)
-    return isinstance(data, numeric_types)
-
 def __get_formated_number(number):
-    return "{:,}".format(math.floor(number / 1000))
+    """
+    取得格式化的數字，用逗號作為千位分隔符.
+    
+    Parameters:
+    number (int or float): The number to be formatted.
+    
+    Returns:
+    str: The formatted number with commas as thousand separators.
+    """     
+    return "{:,.0f}".format(round(number))
+    #return "{:,}".format(number)
 
 def __get_percentage_number(number):
     return "{:.1%}".format(number)
 
-def __get_financial_statements_sum(company_code, fiscal_year, category: CategoryEnum) -> dict:
-    result = {}
-    data_dict_list = []
-    financial_statement_items = __get_financial_statement_items_dict(category)
-
-    if category == CategoryEnum.TW:
-        data_list = data_service.get_financial_statements_by_year(company_code, fiscal_year)
-    else:
-        data_list = data_service.get_financial_statements_foreign_by_year(company_code, fiscal_year)
-
-
-    for data in data_list:
-        if data is not None:
-            data_dict_list.append(data.as_dict())
-
-    for k in financial_statement_items.keys():
-        sum = 0
-        for data_dict in data_dict_list:
-            if k in data_dict:
-                if __is_numeric(data_dict[k]):
-                    sum += data_dict[k]
-        result[k] = sum
-    return result
-
-def __draw_financial_statements_items_name(sheet, start_cell, items):
+# 在excel中填入財報科目
+def __draw_financial_statements_items_name(sheet, start_cell, category):
     row_index = start_cell.row
     column_index = start_cell.column
     sheet.column_dimensions['C'].auto_size = True
-    number_of_items = len(items)
+    items = setting.get_financial_statement_items_dict(category)
+    color_format = setting.get_financial_statement_items_color_format_dict(category)
     sheet.cell(row=row_index, column=column_index).value = "科目"
 
     for (k, v) in items.items():
@@ -303,48 +159,48 @@ def __draw_financial_statements_items_name(sheet, start_cell, items):
         sheet.cell(row=row_index, column=column_index).value = v
         sheet.cell(row=row_index, column=column_index).border = border_style_all
 
-        # style
+    # style
     row_index = start_cell.row
     sheet.cell(row=row_index, column=column_index).border = border_style_all
     sheet.cell(row=row_index, column=column_index).alignment = Alignment(horizontal='center', vertical='center')
-    sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=financial_statement_tw_items_color_format["title"])
+    sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=color_format["title"])
 
     for k in items.keys():
         row_index += 1
         sheet.cell(row=row_index, column=column_index).border = border_style_all
         sheet.cell(row=row_index, column=column_index).alignment = Alignment(horizontal='center', vertical='center')
-        if k in financial_statement_tw_items_color_format:
-            sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=financial_statement_tw_items_color_format[k])
+        if k in color_format:
+            sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=color_format[k])
         
 
+# 填入季度財報
 def __draw_financial_statements_items(sheet, start_cell, comany_code, fiscal_year, quarter, category: CategoryEnum):    
     data_dict = None
 
     # get value
-    if category == CategoryEnum.TW:    
-        data = data_service.get_financial_statements_by_quarter(comany_code, fiscal_year, quarter)
-    else:
-        data = data_service.get_financial_statements_foreign_by_quarter(comany_code, fiscal_year, quarter)
-
-    if data is not None:
-        data_dict = data.as_dict()
+    result = data_service.get_financial_statements_quarter_values(comany_code, fiscal_year, quarter, category)
     
     # draw cell
-    __draw_financial_statements_cells(sheet, start_cell, fiscal_year, quarter, data_dict, category)
+    __draw_financial_statements_cells(sheet, start_cell, str(fiscal_year) + "Q" + str(quarter), result, category)
 
-def __draw_financial_statements_cells(sheet, start_cell, fiscal_year, quarter, data_dict, category):
+# 在excel中填入季度財報欄位
+def __draw_financial_statements_cells(sheet, start_cell, title, data_dict, category):
+    """
+    Excel中填入季度財報數據的Cell
+    """    
     row_index = start_cell.row
     column_index = start_cell.column
-    sheet.cell(row=row_index, column=column_index).value = str(fiscal_year) + "Q" + str(quarter)
+    #sheet.cell(row=row_index, column=column_index).value = str(fiscal_year) + "Q" + str(quarter)
+    sheet.cell(row=row_index, column=column_index).value = title
 
     if category == CategoryEnum.TW:
-        financial_statement_items = __get_financial_statement_items_dict(category)
-        financial_statement_items_percentage_format = __get_financial_statement_items_percentage_format_dict(category)
-        financial_statement_items_color_format = __get_financial_statement_items_color_format_dict(category)    
+        financial_statement_items = setting.get_financial_statement_items_dict(category)
+        financial_statement_items_percentage_format = setting.get_financial_statement_items_percentage_format_dict(category)
+        financial_statement_items_color_format = setting.get_financial_statement_items_color_format_dict(category)    
     else:
-        financial_statement_items = __get_financial_statement_items_dict(category)
-        financial_statement_items_percentage_format = __get_financial_statement_items_percentage_format_dict(category)
-        financial_statement_items_color_format = __get_financial_statement_items_color_format_dict(category)
+        financial_statement_items = setting.get_financial_statement_items_dict(category)
+        financial_statement_items_percentage_format = setting.get_financial_statement_items_percentage_format_dict(category)
+        financial_statement_items_color_format = setting.get_financial_statement_items_color_format_dict(category)
 
     # value
     if data_dict is not None:
@@ -354,7 +210,11 @@ def __draw_financial_statements_cells(sheet, start_cell, fiscal_year, quarter, d
                 if k in financial_statement_items_percentage_format:
                     sheet.cell(row=row_index, column=column_index).value = __get_percentage_number(data_dict[k])
                 else:
-                    sheet.cell(row=row_index, column=column_index).value = __get_formated_number(data_dict[k])
+                    # TW財報數字單位與資料庫數字不同，需除以1000
+                    if category == CategoryEnum.TW:
+                        sheet.cell(row=row_index, column=column_index).value = __get_formated_number(data_dict[k] / 1000)
+                    else:
+                        sheet.cell(row=row_index, column=column_index).value = __get_formated_number(data_dict[k])
     
     # style
     row_index = start_cell.row
@@ -369,59 +229,23 @@ def __draw_financial_statements_cells(sheet, start_cell, fiscal_year, quarter, d
         if k in financial_statement_items_color_format:
             sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=financial_statement_items_color_format[k])
 
-def __draw_draw_financial_statements_summary(sheet, start_cell, comany_code, fiscal_year, category):
+# 填入年度財報
+def __draw_financial_statements_summary(sheet, start_cell, comany_code, fiscal_year, category):
     # get value
-    data_dict = __get_financial_statements_sum(comany_code, fiscal_year, category)
+    data_dict = data_service.get_financial_statements_year_values(comany_code, fiscal_year, category)
     
     # draw cell
-    __draw_financial_statements_sum_cells(sheet, start_cell, fiscal_year, data_dict, category)
-
-def __draw_financial_statements_sum_cells(sheet, start_cell, fiscal_year, data_dict, category: CategoryEnum):
-    row_index = start_cell.row
-    column_index = start_cell.column
-
-    # value
-    sheet.cell(row=row_index, column=column_index).value = str(fiscal_year)
-
-    if category == CategoryEnum.TW:
-        financial_statement_items = __get_financial_statement_items_dict(category)
-        financial_statement_items_percentage_format = __get_financial_statement_items_percentage_format_dict(category)
-        financial_statement_items_color_format = __get_financial_statement_items_color_format_dict(category)
-    
-    else:
-        financial_statement_items = __get_financial_statement_items_dict(category)
-        financial_statement_items_percentage_format = __get_financial_statement_items_percentage_format_dict(category)
-        financial_statement_items_color_format = __get_financial_statement_items_color_format_dict(category)
-    
-    for k in financial_statement_items.keys():
-        row_index += 1
-        if k in data_dict:
-            if k in financial_statement_items_percentage_format:
-                sheet.cell(row=row_index, column=column_index).value = __get_percentage_number(data_dict[k])
-            else:
-                sheet.cell(row=row_index, column=column_index).value = __get_formated_number(data_dict[k])
-        
-    
-    # style
-    row_index = start_cell.row
-    sheet.cell(row=row_index, column=column_index).border = border_style_all
-    sheet.cell(row=row_index, column=column_index).alignment = Alignment(horizontal='center', vertical='center')
-    sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=financial_statement_items_color_format["title"])
-
-    for k in financial_statement_items.keys():
-        row_index += 1
-        sheet.cell(row=row_index, column=column_index).border = border_style_all
-        sheet.cell(row=row_index, column=column_index).alignment = Alignment(horizontal='center', vertical='center')
-        if k in financial_statement_items_color_format:
-            sheet.cell(row=row_index, column=column_index).fill = PatternFill(fill_type='solid', start_color=financial_statement_items_color_format[k])         
+    __draw_financial_statements_cells(sheet, start_cell, str(fiscal_year), data_dict, category)
 
 # Todo 將起始的cell傳入    
+# 填入國內財報(季報+年報)
 def __draw_financial_statements_tw(sheet, comany_code, input_fiscal_year, input_quarter):
     start_cell = sheet['C7']
     row_index = start_cell.row
     column_index = start_cell.column
 
-    __draw_financial_statements_items_name(sheet, sheet.cell(row=row_index, column=column_index), financial_statement_tw_items)
+#    __draw_financial_statements_items_name(sheet, sheet.cell(row=row_index, column=column_index), financial_statement_tw_items)
+    __draw_financial_statements_items_name(sheet, sheet.cell(row=row_index, column=column_index), CategoryEnum.TW)
 
     # 畫季報
     quarter_array = __get_report_quarter(input_fiscal_year, input_quarter)
@@ -433,15 +257,17 @@ def __draw_financial_statements_tw(sheet, comany_code, input_fiscal_year, input_
     year_array = __get_report_year(input_fiscal_year)
     for year in year_array:
         column_index += 1
-        __draw_draw_financial_statements_summary(sheet, sheet.cell(row=row_index, column=column_index), comany_code, year, CategoryEnum.TW)
+        __draw_financial_statements_summary(sheet, sheet.cell(row=row_index, column=column_index), comany_code, year, CategoryEnum.TW)
 
-# Todo 將起始的cell傳入   
+# Todo 將起始的cell傳入  
+# 填入國外財報(季報+年報) 
 def __draw_financial_statements_foreign(sheet, comany_code, input_fiscal_year, input_quarter):
     start_cell = sheet['C7']
     row_index = start_cell.row
     column_index = start_cell.column
 
-    __draw_financial_statements_items_name(sheet, sheet['C7'], financial_statement_foreign_items)
+    #__draw_financial_statements_items_name(sheet, sheet['C7'], financial_statement_foreign_items)
+    __draw_financial_statements_items_name(sheet, sheet['C7'], CategoryEnum.FOREIGN)
 
     # 畫季報
     quarter_array = __get_report_quarter(input_fiscal_year, input_quarter)
@@ -453,8 +279,9 @@ def __draw_financial_statements_foreign(sheet, comany_code, input_fiscal_year, i
     year_array = __get_report_year(input_fiscal_year)
     for year in year_array:
         column_index += 1
-        __draw_draw_financial_statements_summary(sheet, sheet.cell(row=row_index, column=column_index), comany_code, year, CategoryEnum.FOREIGN)    
+        __draw_financial_statements_summary(sheet, sheet.cell(row=row_index, column=column_index), comany_code, year, CategoryEnum.FOREIGN)    
 
+# 依據內容長度調整excel欄寬
 def __autofit_column(ws, column_letter):
     column_index = openpyxl.utils.column_index_from_string(column_letter)
     max_length = 0
@@ -467,22 +294,24 @@ def __autofit_column(ws, column_letter):
     ws.column_dimensions[column_letter].width = max_length * 1.75
 
 
+# 產生圖表
 def __get_combo_chart(categories, bar_chart_data, line_chart_data_1, line_chart_data_2):
     if os_name == 'Windows':
         plt.rcParams['font.family'] = 'mingliu'
     else: 
         plt.rcParams['font.family'] = 'WenQuanYi Micro Hei'
 
-    
     fig, ax1 = plt.subplots()
 
     # Plotting the bar chart
     bars = ax1.bar(categories, bar_chart_data, color='#C5E0B4', label='營業收入', align='center', width=0.5)
 
+    max_height = max(bar_chart_data)
+
     # Display values on the bar chart
     for bar, value in zip(bars, bar_chart_data):
         #ax1.text(bar.get_x() + bar.get_width() / 2, value + 0.5, str(value), ha='center', va='bottom', color='black', fontsize=10)
-        ax1.text(bar.get_x() + bar.get_width() / 2, 3000, __get_formated_number(value), ha='center', va='bottom', color='black', fontsize=10)
+        ax1.text(bar.get_x() + bar.get_width() / 2, max_height * 0.1, __get_formated_number(value), ha='center', va='bottom', color='black', fontsize=10)
 
     # Create a secondary y-axis for the line charts
     ax2 = ax1.twinx()
@@ -521,6 +350,7 @@ def __get_combo_chart(categories, bar_chart_data, line_chart_data_1, line_chart_
     buffer.seek(0)
     return buffer
 
+# 產生圖表
 def __get_operating_combo_chart(categories, bar_chart_data_1, bar_chart_data_2, bar_chart_data_3, line_chart_data_1, line_chart_data_2):
     if os_name == 'Windows':
         plt.rcParams['font.family'] = 'mingliu'
@@ -580,18 +410,6 @@ def __get_operating_combo_chart(categories, bar_chart_data_1, bar_chart_data_2, 
     buffer.seek(0)
     return buffer
 
-#def __extract_quarter(data):
-#    result = []
-#    for row in data:
-#        result.append(str(row[0]) + "Q" + str(row[1]))
-#    return result
-
-#def __extract_quarter_data(data):
-#    result = []
-#    for row in data:
-#        result.append(row[2]) 
-#    return result
-
 def __extract_year_data(data):
     result = []
     for row in data:
@@ -599,62 +417,41 @@ def __extract_year_data(data):
     return result
 
 def __get_quarter_profit_chart(company_code, quarter_array, category: CategoryEnum): 
-    start_fiscal_year =  quarter_array[0][0]  
-    end_fiscal_year = quarter_array[-1][0]      
-    if category == CategoryEnum.TW:
-        financial_statements = data_service.get_financial_statements_by_year_between(company_code, start_fiscal_year, end_fiscal_year)
-    else : 
-        financial_statements = data_service.get_financial_statements_foreign_by_year_between(company_code, start_fiscal_year, end_fiscal_year)
+    quarter_financial_statements = []
+    for target_year, target_quarter in quarter_array:
+        data = data_service.get_financial_statements_quarter_values(company_code, target_year, target_quarter, category)
+        quarter_financial_statements.append(data)
 
-    financial_statements_after_filter = []
-    # 將quarter_array轉為dict作為filter不在quarter_array的資料
-    dict = {f"{year}Q{quarter}": (year, quarter) for year, quarter in quarter_array}  
-    for data in financial_statements:
-        if dict.get(f"{data.fiscal_year}Q{data.quarter}"):
-            financial_statements_after_filter.append(data)
-
+    quarter_array_after_filter = [f"{data.get('fiscal_year')}Q{data.get('quarter')}" for data in quarter_financial_statements]    
+    
     if category == CategoryEnum.TW:
-        operating_revenue_array = [ data.operating_revenue for data in financial_statements_after_filter] 
+        # TW財報單位與資料庫單位不同，需要除以1000
+        operating_revenue_array = [ data.get('operating_revenue') / 1000 for data in quarter_financial_statements] 
     else:  
-        operating_revenue_array = [ data.net_sales for data in financial_statements_after_filter] 
-
-    gross_profit_margin_array = [ data.gross_profit_margin for data in financial_statements_after_filter] 
-    gross_profit_margin_percentage = [i * 100 for i in gross_profit_margin_array]
-    net_profit_margin_array = [ data.net_profit_margin for data in financial_statements_after_filter] 
-    net_profit_margin_percentage = [i * 100 for i in net_profit_margin_array]
-    quarter_array_after_filter = [f"{data.fiscal_year}Q{data.quarter}" for data in financial_statements_after_filter]
-
+        operating_revenue_array = [ data.get('net_sales') for data in quarter_financial_statements] 
+    
+    gross_profit_margin_percentage = [data.get('gross_profit_margin') * 100 for data in quarter_financial_statements]
+    net_profit_margin_percentage = [data.get('net_profit_margin') * 100 for data in quarter_financial_statements]
+    
     return __get_combo_chart(quarter_array_after_filter, operating_revenue_array, gross_profit_margin_percentage, net_profit_margin_percentage)
 
-#def __filter_data_with_quarter_array(data_array, quarter_array):
-#    result = []
-#    dict = {f"{year}Q{quarter}": (year, quarter) for year, quarter in quarter_array}
-#    #print(dict)
-#    for data in data_array:
-#        if dict.get(f"{data[0]}Q{data[1]}"):
-#            result.append(data)
-    
-#    return result
-
 def __get_year_profit_chart(company_code, start_fiscal_year, end_fiscal_year, category: CategoryEnum):
-    if category == CategoryEnum.TW:
-        operating_revenue = data_service.get_year_operating_revenue(company_code, start_fiscal_year, end_fiscal_year)
-        gross_profit_margin = data_service.get_year_gross_profit_margin(company_code, start_fiscal_year, end_fiscal_year)
-        net_profit_margin = data_service.get_year_net_profit_margin(company_code, start_fiscal_year, end_fiscal_year)
+    year_financial_statements = []
+    for i in range(start_fiscal_year, end_fiscal_year + 1):
+        data = data_service.get_financial_statements_year_values(company_code, i, category)
+        year_financial_statements.append(data)
+
+    categories = [str(i) for i in range(start_fiscal_year, end_fiscal_year + 1)] 
+
+    # TW財報單位與資料庫單位不同，需要除以1000
+    if category == CategoryEnum.TW:        
+        operating_revenue_array = [ i.get('operating_revenue') / 1000 for i in year_financial_statements]
     else:
-        operating_revenue = data_service.get_year_net_sales_foreign(company_code, start_fiscal_year, end_fiscal_year)
-        gross_profit_margin = data_service.get_year_gross_profit_margin_foreign(company_code, start_fiscal_year, end_fiscal_year)
-        net_profit_margin = data_service.get_year_net_profit_margin_foreign(company_code, start_fiscal_year, end_fiscal_year)
+        operating_revenue_array = [ i.get('net_sales') for i in year_financial_statements]
 
-    categories = [str(i) for i in range(start_fiscal_year, end_fiscal_year + 1)]
-    operating_revenue_array = __extract_year_data(operating_revenue)
-
-    gross_profit_margin_array = __extract_year_data(gross_profit_margin)
-    gross_profit_margin_percentage = [i * 100 for i in gross_profit_margin_array]
-
-    net_profit_margin_array = __extract_year_data(net_profit_margin)
-    net_profit_margin_percentage = [i * 100 for i in net_profit_margin_array]
-
+    gross_profit_margin_percentage = [i.get('gross_profit_margin') * 100 for i in year_financial_statements] 
+    net_profit_margin_percentage = [i.get('net_profit_margin') * 100 for i in year_financial_statements]   
+       
     return __get_combo_chart(categories, operating_revenue_array, gross_profit_margin_percentage, net_profit_margin_percentage)
 
 def __get_year_operating_chart(company_code, start_fiscal_year, end_fiscal_year, category: CategoryEnum):
@@ -763,7 +560,7 @@ def create_lotes_style_financial_statements(sheet, company_code, input_fiscal_ye
     # 需要上傳的暫存檔
     temporary_file = []
 
-    for(k, v) in lotes_report_format.items():
+    for(k, v) in setting.lotes_report_format.items():
         # 合併儲存格
         if not __is_multiple_row(sheet, v):
             sheet.merge_cells(v)
@@ -792,7 +589,7 @@ def create_lotes_style_financial_statements(sheet, company_code, input_fiscal_ye
     img = openpyxl.drawing.image.Image(buffer)
     img.width = 300
     img.height = 300
-    chart_location = __get_first_cell(sheet, lotes_report_format['profit_summary_chart'])
+    chart_location = __get_first_cell(sheet, setting.lotes_report_format['profit_summary_chart'])
     sheet.add_image(img, chart_location.coordinate)
 
     # 保存圖表
@@ -829,7 +626,7 @@ def create_lotes_style_financial_statements(sheet, company_code, input_fiscal_ye
     return temporary_file
 
 def create_argosy_style_financial_statements(sheet, company_code, input_fiscal_year, input_quarter, report_text, category: CategoryEnum):
-    for(k, v) in argosy_report_format.items():
+    for(k, v) in setting.argosy_report_format.items():
         # 合併儲存格
         sheet.merge_cells(v)
         # 劃格線
@@ -849,9 +646,7 @@ def create_argosy_style_financial_statements(sheet, company_code, input_fiscal_y
     img = openpyxl.drawing.image.Image(buffer)
     img.width = 600
     img.height = 450
-    sheet.add_image(img, "K4")
-
-    
+    sheet.add_image(img, "K4") 
 
 
 
