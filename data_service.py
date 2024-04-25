@@ -129,7 +129,6 @@ def get_financial_statements_year_values(company_code, fiscal_year, category: Ca
     #result = {}
     #data_dict_list = []
     #financial_statement_items = __get_financial_statement_items_dict(category)
-
     if category == CategoryEnum.TW:
         data_list = get_financial_statements_by_year(company_code, fiscal_year)
     else:
@@ -146,7 +145,7 @@ def get_financial_statements_year_values(company_code, fiscal_year, category: Ca
         # 計算YoY
         previous_model_list = get_financial_statements_foreign_by_year(company_code, fiscal_year - 1)
         previous_sum_dict =  __get_sum_of_numeric_field_of_financial_statements(previous_model_list, category)
-        if previous_sum_dict['net_sales'] > 0 and result['net_sales'] > 0:
+        if previous_sum_dict['net_sales'] is not None and previous_sum_dict['net_sales'] != 0 and result['net_sales'] is not None:
             result['yoy_growth'] = (result['net_sales'] - previous_sum_dict['net_sales']) / previous_sum_dict['net_sales']
 
     return result        
@@ -215,28 +214,45 @@ def __get_sum_of_numeric_field_of_financial_statements(data_list, category:Categ
 
     for k in financial_statement_items.keys():
         sum = 0
+        is_all_none = True
+        is_percentage_format = False
+
+        if k in financial_statement_items_percentage_format:
+            is_percentage_format = True
+
         for data_dict in data_dict_list:
-            if k in data_dict and k not in financial_statement_items_percentage_format:   # 計算欄位無法單純相加，故必須排除
+            if k in data_dict and not is_percentage_format:   # 計算欄位無法單純相加，故必須排除
                 if util.is_numeric(data_dict[k]):
                     sum += data_dict[k]
-        result[k] = sum    
+                    is_all_none = False
+        if is_all_none:
+            result[k] = None
+        else:
+            result[k] = sum    
     return result
 
 # 計算報表中的計算欄位值(不可加總部分)，如毛利率等
 def __get_simple_calculated_value_of_financial_statements(data:dict, category:CategoryEnum):
-    result = data.copy()
+    result = dict(data)
+
+    # 將空值設為0，避免計算時出現錯誤
+    for k in data.keys():
+        if data.get(k) is None:
+            data[k] = 0
+
     if category == CategoryEnum.TW:
         #稅後淨利 S=O-Q-R
-        result['net_income'] = result['pretax_income'] - result['income_tax_expense'] - result['minority_interest_income']
+        if result['pretax_income'] is not None or result['income_tax_expense'] is not None or result['minority_interest_income'] is not None:
+            result['net_income'] = data['pretax_income'] - data['income_tax_expense'] - data['minority_interest_income']
         
-        if data['operating_revenue'] > 0:
+        if result['operating_revenue'] is not None and result['operating_revenue'] > 0:
             result['gross_profit_margin'] = result['gross_profit'] / result['operating_revenue']
             result['pretax_net_profit_margin'] = result['pretax_income'] / result['operating_revenue']
             result['net_profit_margin'] = result['net_income']  / result['operating_revenue']
     else:
-        if data['net_sales'] > 0: 
+        if result['net_sales'] is not None and result['net_sales'] > 0: 
             result['gross_profit_margin'] = result['gross_profit'] / result['net_sales']
-            result['selling_general_administrative_expenses_percentage'] = result['selling_general_administrative_expenses'] / data['net_sales']
+            result['selling_general_administrative_expenses_percentage'] = result['selling_general_administrative_expenses'] / result['net_sales']
             result['pretax_profit_margin'] = result['operating_income'] / result['net_sales']
             result['pretax_net_profit_margin'] = result['pretax_income'] / result['net_sales']
             result['net_profit_margin'] = result['net_income']  / result['net_sales']
