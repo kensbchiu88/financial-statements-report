@@ -233,7 +233,7 @@ def __draw_financial_statements_cells(sheet, start_cell, title, data_dict, categ
 def __draw_financial_statements_summary(sheet, start_cell, comany_code, fiscal_year, category):
     # get value
     data_dict = data_service.get_financial_statements_year_values(comany_code, fiscal_year, category)
-    
+
     # draw cell
     __draw_financial_statements_cells(sheet, start_cell, str(fiscal_year), data_dict, category)
 
