@@ -245,12 +245,12 @@ def __get_simple_calculated_value_of_financial_statements(data:dict, category:Ca
         if result['pretax_income'] is not None or result['income_tax_expense'] is not None or result['minority_interest_income'] is not None:
             result['net_income'] = data['pretax_income'] - data['income_tax_expense'] - data['minority_interest_income']
         
-        if result['operating_revenue'] is not None and result['operating_revenue'] > 0:
+        if result['operating_revenue'] is not None and result['operating_revenue'] != 0:
             result['gross_profit_margin'] = result['gross_profit'] / result['operating_revenue']
             result['pretax_net_profit_margin'] = result['pretax_income'] / result['operating_revenue']
             result['net_profit_margin'] = result['net_income']  / result['operating_revenue']
     else:
-        if result['net_sales'] is not None and result['net_sales'] > 0: 
+        if result['net_sales'] is not None and result['net_sales'] != 0: 
             result['gross_profit_margin'] = result['gross_profit'] / result['net_sales']
             result['selling_general_administrative_expenses_percentage'] = result['selling_general_administrative_expenses'] / result['net_sales']
             result['pretax_profit_margin'] = result['operating_income'] / result['net_sales']
