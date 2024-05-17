@@ -4,7 +4,7 @@ import os
 import sys
 import openpyxl
 from constant import CategoryEnum
-from util import get_previous_two_quarter, upload_to_minio, call_send_email_api
+from util import get_previous_quarter, get_previous_two_quarter, upload_to_minio, call_send_email_api
 #import excel2img
 import excel
 import news_excel
@@ -275,6 +275,6 @@ if __name__ == "__main__":
   
   print(f"開始產生報表 {datetime.today()}")
   print(f"現在年度: {fiscal_year}  現在季度: {quarter}")
-  (target_year, target_quarter) = get_previous_two_quarter(fiscal_year, quarter)
+  (target_year, target_quarter) = get_previous_quarter(fiscal_year, quarter)
   print(f"財報年度: {target_year}  財報季度: {target_quarter}") 
   main(target_year, target_quarter)  
