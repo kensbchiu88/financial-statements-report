@@ -197,7 +197,9 @@ def get_financial_statements_quarter_values(comany_code, fiscal_year, quarter, c
                     quarter_net_sales[key] = previous
 
             if previous > 0:                
-                result["qoq_growth"] = (result["net_sales"] - previous) / previous  
+                result["qoq_growth"] = (result["net_sales"] - previous) / previous 
+    else: 
+        raise Exception(f"no data. company_code: {comany_code}, fiscal_year: {fiscal_year}, quarter: {quarter}")
     
     return result
 
